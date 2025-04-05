@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈希和加盐实时可视化</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #inputField {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .output {
+            background-color: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>哈希和加盐实时可视化</h1>
+    <input type="text" id="inputField" placeholder="请输入字符串">
+    <div class="output" id="original">原始输入: </div>
+    <div class="output" id="unsaltedHash">未加盐哈希 (SHA-256): </div>
+    <div class="output" id="salt">盐值: </div>
+    <div class="output" id="saltedString">加盐后的字符串: </div>
+    <div class="output" id="saltedHash">加盐哈希 (SHA-256): </div>
+
+    <script>
+        // 计算 SHA-256 哈希
+        async function sha256(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // 生成随机盐值
+        function generateSalt(length = 16) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let salt = '';
+            for (let i = 0; i < length; i++) {
+                salt += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return salt;
+        }
+
+        // 处理输入并更新显示
+        async function processInput(input) {
+            const originalString = input || '';
+            const unsaltedHash = await sha256(originalString);
+            const salt = generateSalt();
+            const saltedString = originalString + salt;
+            const saltedHash = await sha256(saltedString);
+
+            document.getElementById('original').innerHTML = `<span class="label">原始输入:</span> ${originalString || '(空)'}`;
+            document.getElementById('unsaltedHash').innerHTML = `<span class="label">未加盐哈希 (SHA-256):</span> ${unsaltedHash}`;
+            document.getElementById('salt').innerHTML = `<span class="label">盐值:</span> ${salt}`;
+            document.getElementById('saltedString').innerHTML = `<span class="label">加盐后的字符串:</span> ${saltedString || '(空)'}`;
+            document.getElementById('saltedHash').innerHTML = `<span class="label">加盐哈希 (SHA-256):</span> ${saltedHash}`;
+        }
+
+        // 监听输入事件
+        const inputField = document.getElementById('inputField');
+        inputField.addEventListener('input', (event) => {
+            processInput(event.target.value);
+        });
+
+        // 初始化显示
+        processInput('');
+    </script>
+</body>
+</html>
